@@ -17,21 +17,28 @@ PAGE = """\
 </head>
 
 <body>
-  <p><button id="start_stop" onclick="start_stop()">Start</button></p>
+  <p>
+    <button id="start-btn" onclick="start()">Start</button>
+    <button id="stop-btn" onclick="stop()">Stop</button>
+  </p>
   <video id="video" autoplay="true" playsinline="true"></video>
+
   <script>
 var pc = null;
+videoElem = document.getElementById('video');
+startBtn = document.getElementById('start-btn');
+stopBtn = document.getElementById('stop-btn');
 
-async function start_stop() {
-    const btnElem = document.getElementById('start_stop');
-    if (btnElem.textContent === "Stop") {
-        btnElem.textContent = "Start";
-        pc.close()
-        return
-    }
+function stop() {
+    pc.close()
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+}
+
+async function start() {
     pc = new RTCPeerConnection({sdpSemantics: 'unified-plan'});
     pc.addEventListener('track', evt => {
-        document.getElementById('video').srcObject = evt.streams[0]
+        videoElem.srcObject = evt.streams[0]
     });
     pc.addTransceiver('video', { direction: 'recvonly' });
 
@@ -45,11 +52,11 @@ async function start_stop() {
 
     const answer = await response.json();
     await pc.setRemoteDescription(answer);
-    btnElem.textContent = "Stop"
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
 }
   </script>
 </body>
-
 </html>
 """
 
@@ -90,6 +97,8 @@ async def offer(request: web.Request) -> web.Response:
             pcs.discard(pc)
         elif pc.connectionState == "closed":
             pcs.discard(pc)
+        if not pcs:
+            await cleanup()
 
     video = create_track()
     pc.addTrack(video)
@@ -104,11 +113,17 @@ async def offer(request: web.Request) -> web.Response:
     )
 
 
-async def on_shutdown(app: web.Application) -> None:
+async def cleanup():
+    global webcam, relay
     await asyncio.gather(*(pc.close() for pc in pcs))
     pcs.clear()
     if webcam is not None:
         webcam.video.stop()
+    webcam, relay = None, None
+
+
+async def on_shutdown(app: web.Application) -> None:
+    await cleanup()
 
 
 if __name__ == "__main__":
