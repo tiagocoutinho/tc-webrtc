@@ -98,7 +98,9 @@
     peerConnection.onicecandidate = async (event) => {
       //Event that fires off when a new offer ICE candidate is created
       if (event.candidate) {
-        document.getElementById('offer-sdp').value = JSON.stringify(peerConnection.localDescription)
+        const offer = JSON.stringify(peerConnection.localDescription);
+        document.getElementById('offer-sdp').value = offer;
+        navigator.clipboard.writeText(offer);
       }
     };
 
@@ -112,8 +114,9 @@
     peerConnection.onicecandidate = async (event) => {
       //Event that fires off when a new answer ICE candidate is created
       if (event.candidate) {
-        console.log('Adding answer candidate...:', event.candidate)
-        document.getElementById('answer-sdp').value = JSON.stringify(peerConnection.localDescription)
+        const answer = JSON.stringify(peerConnection.localDescription);
+        document.getElementById('answer-sdp').value = answer;
+        navigator.clipboard.writeText(answer);
       }
     };
 
