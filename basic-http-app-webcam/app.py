@@ -30,12 +30,15 @@ startBtn = document.getElementById('start-btn');
 stopBtn = document.getElementById('stop-btn');
 
 function stop() {
-    pc.close()
     startBtn.disabled = false;
     stopBtn.disabled = true;
+    pc.close()
 }
 
 async function start() {
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+
     pc = new RTCPeerConnection({sdpSemantics: 'unified-plan'});
     pc.addEventListener('track', evt => {
         videoElem.srcObject = evt.streams[0]
@@ -52,8 +55,7 @@ async function start() {
 
     const answer = await response.json();
     await pc.setRemoteDescription(answer);
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
+
 }
   </script>
 </body>
