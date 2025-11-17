@@ -67,7 +67,7 @@ relay = None
 webcam = None
 
 
-def create_track():
+def create_video_track():
     global relay, webcam
     if relay is None:
         webcam = MediaPlayer(
@@ -102,7 +102,7 @@ async def offer(request: web.Request) -> web.Response:
         if not pcs:
             await cleanup()
 
-    video = create_track()
+    video = create_video_track()
     pc.addTrack(video)
 
     await pc.setRemoteDescription(offer)
