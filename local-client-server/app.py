@@ -7,10 +7,10 @@ from aiortc import RTCPeerConnection
 from aiortc.contrib.media import MediaPlayer, MediaRecorder
 
 
-def out(message, align):
+def out(message, align, ch=" "):
     width, _ = shutil.get_terminal_size()
     width = max(15, width - 26)
-    message = f"{{:.{align}{width}}}".format(message)
+    message = f"{{:{ch}{align}{width}}}".format(message)
     logging.warning(message)
 
 
@@ -37,25 +37,17 @@ def connection(print):
     async def _() -> None:
         print(f"Signaling state changed to: {pc.signalingState}")
 
-    @pc.on("track")
-    async def _(track) -> None:
-        print("Track added")
-
-        @track.on("ended")
-        async def on_ended():
-            print("Track ended")
-
     return pc
 
 
 async def server_loop(channel):
     print = print_server
     pc = connection(print_server)
-    print("Waiting for offer")
+    print("Waiting for offer...")
     offer = await channel.recv()
     print("Offer received")
     await pc.setRemoteDescription(offer)
-    print("Preparing video feed")
+    print("Preparing video feed...")
     player = MediaPlayer(
         "/dev/video0",
         format="v4l2",
@@ -68,7 +60,7 @@ async def server_loop(channel):
     await pc.setLocalDescription(answer)
 
     answer = pc.localDescription
-    print("Sending answer")
+    print("Sending answer...")
     await channel.send(answer)
     print("Answer sent")
     await asyncio.sleep(2)
@@ -81,8 +73,9 @@ async def client_loop(channel):
     print = print_client
     pc = connection(print_client)
     pc.addTransceiver("video", direction="recvonly")
+    print("Creating offer...")
     offer = await pc.createOffer()
-    await pc.setLocalDescription(offer)
+    print("Offer created")
 
     @pc.on("track")
     async def _(track) -> None:
@@ -96,11 +89,13 @@ async def client_loop(channel):
             print("Stop recording")
             await recorder.stop()
 
-    offer = pc.localDescription
-    print("Sending offer")
+    print("Setting local offer...")
+    await pc.setLocalDescription(offer)
+    print("Local offer set")
+    print("Sending offer...")
     await channel.send(offer)
     print("Offer sent")
-    print("Waiting for answer")
+    print("Waiting for answer...")
     answer = await channel.recv()
     print("Answer received")
     await pc.setRemoteDescription(answer)
@@ -127,8 +122,8 @@ def create_channel():
 
 
 async def main():
-    print_server("server")
-    print_client("client")
+    print_server("=== SERVER ===", ch=" ")
+    print_client("=== CLIENT ===", ch=" ")
     channel = create_channel()
     serv = asyncio.create_task(server_loop(channel))
     cl = asyncio.create_task(client_loop(channel))
